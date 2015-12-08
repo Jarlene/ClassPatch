@@ -1,6 +1,6 @@
 # ClassPatch
 第一、原理介绍
-   相关原理请参考
+   相关原理请参考：http://blog.csdn.net/xwl198937/article/details/49801975
 第二、生成patch apk
     1、将改动的java文件编译生成class文件。
     2、将所有的class文件放进/ClassPatch/classes/目录下面，
