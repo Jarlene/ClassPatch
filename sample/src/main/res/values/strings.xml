@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">ClassPatch</string>
+    <string name="action_settings">Settings</string>
+    <string name="showToast">显示Toast</string>
+    <string name="makeDex">生成Dex</string>
+    <string name="changeMethod">替换Method</string>
+    <string name="changeSo">替换So</string>
+    <string name="copy">复制文件</string>
+</resources>
