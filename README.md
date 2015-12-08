@@ -9,5 +9,6 @@
     5、将apk放进data/data/app-packageName/patch目录下。（具体参考sample中的复制按钮选项）
     6、重启app后，patch才能生效
 第三、说明
-   由于现在还在完善中，后期考虑加入patch实时生效的能力，还有替换布局的能力。具体参考我的另一个博客:http://blog.csdn.net/xwl198937/article/details/50134861
+   1、由于现在还在完善中，后期考虑加入patch实时生效的能力，还有替换布局的能力。具体参考我的另一个博客:http://blog.csdn.net/xwl198937/article/details/50134861
+   2、目录下面的patch是已经生成的patch apk，可以直接用，将其放进sdcard中，并重命名为ClassPatch
 
