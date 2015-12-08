@@ -44,18 +44,11 @@ ClassObject* proxyDvmResolveClass(ClassObject* referrer, u4 classIdx, bool fromU
     ClassObject* resClass = NULL;
     char* className;
     resClass = dvmDexGetResolvedClass(pDvmDex, classIdx);
-    className = dexStringByTypeIdx(pDvmDex->pDexFile, classIdx);
-    if (className != NULL) {
-        LOGD("ResolveClass class name is %s", className);
-    }
-//    bool isRes = false;
-//    if (find(FilterClassNamesVector.begin(), FilterClassNamesVector.end(), resClass) != FilterClassNamesVector.end()) {
-//        isRes = true;
-//    }
     if (resClass != NULL) { // 如果需要立即生效，则需要将替换的class做判断，让其不进行返回。
         return resClass;
     }
 
+    className = dexStringByTypeIdx(pDvmDex->pDexFile, classIdx);
     if (className[0] != '\0' && className[1] == '\0') {
         resClass = dvmFindPrimitiveClass_fnPtr(className[0]);
     } else {
@@ -432,3 +425,4 @@ extern void __attribute__ ((visibility ("hidden"))) DalvikFilterClass(JNIEnv* en
     FilterClassNamesVector.push_back(clazz);
 }
 
+                                                                                                                                                                                                                                                                                          
