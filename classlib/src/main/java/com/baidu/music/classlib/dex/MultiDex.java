@@ -192,18 +192,18 @@ public final class MultiDex {
                 ClassLoader classLoader = context.getClassLoader();
                 List<File> fileList = HookManager.getInstance().patchFileFilter(context, dexFiles);
                 installSecondaryDexes(classLoader, optimizedDirectory, fileList);
-                List<String> classNameList = new ArrayList<String>();
-                for (File file : dexFiles) {
-                    DexFile dexFile = DexFile.loadDex(file.getAbsolutePath(), optimizedDirectory
-                            + File.separator + FileUtils.getFileNameWithOutPostfix(file.getAbsolutePath())
-                            + ".odex", 0);
-                    Enumeration<String> classNames = dexFile.entries();
-                    while (classNames.hasMoreElements()) {
-                        String className = classNames.nextElement();
-                        classNameList.add("L" + className.replace(".", "/"));
-                    }
-                }
-                HookBridge.classesFilter(classNameList);
+//                List<String> classNameList = new ArrayList<String>();
+//                for (File file : dexFiles) {
+//                    DexFile dexFile = DexFile.loadDex(file.getAbsolutePath(), optimizedDirectory
+//                            + File.separator + FileUtils.getFileNameWithOutPostfix(file.getAbsolutePath())
+//                            + ".odex", 0);
+//                    Enumeration<String> classNames = dexFile.entries();
+//                    while (classNames.hasMoreElements()) {
+//                        String className = classNames.nextElement();
+//                        classNameList.add("L" + className.replace(".", "/"));
+//                    }
+//                }
+//                HookBridge.classesFilter(classNameList);
             } catch (IllegalAccessException e) {
                 e.printStackTrace();
             } catch (NoSuchFieldException e) {
