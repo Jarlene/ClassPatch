@@ -11,6 +11,7 @@ import com.baidu.music.classlib.utils.ApkUtils;
 import com.baidu.music.classlib.utils.FileUtils;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -127,7 +128,7 @@ public class HookManager extends BaseManager<String, File>{
     }
 
     /**
-     * 将文件拷贝到相关的目录下。
+     * 将Apk文件拷贝到相关的目录下。
      * @param context
      * @param apkPath
      * @param listener
@@ -137,36 +138,56 @@ public class HookManager extends BaseManager<String, File>{
         if (TextUtils.isEmpty(apkPath) || context == null || listener == null) {
             throw new NullPointerException("apkPath is null or context is null or callback is null");
         }
+        final File srcFile = new File(apkPath);
+        final File destFile = new File(getPatchDir(context), srcFile.getName());
+        if (destFile.exists()) {
+            if (getVersion(context, apkPath) > getVersion(context, destFile.getAbsolutePath())) {
+                gotoCopy(srcFile, destFile, listener);
+            } else {
+                listener.notifyError(FileOperatorListener.ERROR_VERSION_CODE);
+            }
+        } else {
+            gotoCopy(srcFile, destFile, listener);
+        }
+    }
+
+    /**
+     * 执行文件复制操作
+     * @param srcFile
+     * @param destFile
+     * @param listener
+     */
+    private void gotoCopy(final File srcFile, final File destFile, final FileOperatorListener listener) {
         ioHandlerProvider.getIOHandler().post(new Runnable() {
             @Override
             public void run() {
                 try {
-                    if (!isValidate(context, apkPath)) {
-                        listener.notifyError(FileOperatorListener.ERROR_CODE_INVALIDATE);
-                    } else {
-                        File srcFile = new File(apkPath);
-                        File destFile = new File(context.getDir("patch", Context.MODE_PRIVATE),
-                                srcFile.getName());
-                        if (destFile.exists()) {
-                            if (getVersion(context, apkPath) > getVersion(context,
-                                    destFile.getAbsolutePath())){
-                                destFile.delete();
-                                FileUtils.copyFile(srcFile, destFile);
-                                listener.notifyCompleted();
-                            } else {
-                                listener.notifyError(FileOperatorListener.ERROR_VERSION_CODE);
-                            }
-                        } else {
-                            FileUtils.copyFile(srcFile, destFile);
-                            listener.notifyCompleted();
-                        }
-                    }
-                } catch (Exception e) {
+                    FileUtils.copyFile(srcFile, destFile);
+                    listener.notifyCompleted();
+                } catch (IOException e) {
                     listener.notifyError(FileOperatorListener.ERROR_CODE_UNKNOW);
                     e.printStackTrace();
                 }
             }
         });
+    }
+
+    /**
+     * 将文件复制到相关目录下面
+     * @param context
+     * @param savePath
+     * @param srcPath
+     * @param listener
+     */
+    public void copyFile(final Context context, final String savePath, final String srcPath,
+                         final FileOperatorListener listener) {
+        if (TextUtils.isEmpty(srcPath) || TextUtils.isEmpty(savePath)
+                || context == null || listener == null) {
+            throw new NullPointerException("savePath or srcPath is null or context is null or callback is null");
+        }
+        File srcFile = new File(srcPath);
+        File destFile = new File(savePath);
+        gotoCopy(srcFile, destFile, listener);
     }
 
     /**
@@ -234,6 +255,19 @@ public class HookManager extends BaseManager<String, File>{
             throw new NullPointerException("context is null");
         }
         return context.getDir("patchOpt", Context.MODE_PRIVATE);
+    }
+
+
+    /**
+     * so patch保存的路径
+     * @param context
+     * @return
+     */
+    public File getSoPatchDir(Context context) {
+        if (context == null) {
+            throw new NullPointerException("context is null");
+        }
+        return context.getDir("soPatch", Context.MODE_PRIVATE);
     }
 
     /**

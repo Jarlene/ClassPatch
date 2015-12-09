@@ -164,10 +164,27 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void nativeHookButtonClicked() {
-        String soPath = Environment.getExternalStorageDirectory().getAbsolutePath()
+        final String soPath = Environment.getExternalStorageDirectory().getAbsolutePath()
                 + File.separator + "ClassPatch"
                 + File.separator + "libpatch.so";
-        HookBridge.hookNativeMethod("libcommonHook.so", soPath, "testString", "testString");
+        final String destFile =  new File(HookManager.getInstance().getSoPatchDir(mContext),
+                "libpatch.so").getAbsolutePath();
+        HookManager.getInstance().copyFile(mContext, destFile, soPath, new FileOperatorListener() {
+            @Override
+            public void notifyCompleted() {
+                try {
+                    System.load(destFile);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                HookBridge.hookNativeMethod("libcommonHook.so", soPath, "testString", "testString");
+            }
+
+            @Override
+            public void notifyError(int errorCode) {
+                Toast.makeText(mContext, "copy so error",Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void javaHookButtonClicked() {
