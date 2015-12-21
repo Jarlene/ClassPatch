@@ -15,7 +15,7 @@ import java.util.List;
 public final class HookBridge {
 
     private static final String vmVersion = System.getProperty("java.vm.version");
-    private static final boolean isArt = (vmVersion != null && vmVersion.startsWith("2"));
+    private static final boolean isArt = (vmVersion != null && vmVersion.startsWith("2")) || (Build.VERSION.SDK_INT > 19);
 
     static{
         try {
