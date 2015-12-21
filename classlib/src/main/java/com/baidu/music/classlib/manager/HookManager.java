@@ -27,6 +27,8 @@ public class HookManager extends BaseManager<String, File>{
     private static volatile HookManager instance;
     private final IOHandlerProvider ioHandlerProvider;
 
+    private String signture = null;
+
     private HookManager() {
         ioHandlerProvider = new IOHandlerProvider();
     }
@@ -40,6 +42,26 @@ public class HookManager extends BaseManager<String, File>{
             }
         }
         return instance;
+    }
+
+    /**
+     * 注册签名信息，所以有的patch apk签名都要一样。
+     * @param signture
+     */
+    public void registerSignture(String signture) {
+        if (TextUtils.isEmpty(signture)) {
+            throw  new NullPointerException("the signture is null");
+        }
+        this.signture = signture;
+    }
+
+    /**
+     * 检查签名是否有效
+     */
+    private void checkSignture() {
+        if (TextUtils.isEmpty(signture)) {
+            throw  new NullPointerException("the signture is null");
+        }
     }
 
     /**
@@ -80,6 +102,7 @@ public class HookManager extends BaseManager<String, File>{
     /**
      * 验证patch的有效性
      * 这个验证有点草率，以后会采用更好的验证
+     * 采用签名进行验证
      * @param context
      * @param apkPath
      * @return
@@ -89,7 +112,8 @@ public class HookManager extends BaseManager<String, File>{
         if (!TextUtils.isEmpty(apkPath)) {
             File apkFile = new File(apkPath);
             if (apkFile.getAbsolutePath().endsWith(".apk")) {
-                if (ApkUtils.getPackageInfo(context, apkPath) != null) {
+                if (ApkUtils.getPackageInfo(context, apkPath) != null
+                        && signture.equals(ApkUtils.getApkSignatures(context,apkPath)[0])) {
                     validate = true;
                 }
             }
@@ -118,6 +142,7 @@ public class HookManager extends BaseManager<String, File>{
         if (context == null || files == null) {
             throw new NullPointerException("Context is null or files is Empty");
         }
+        checkSignture();
         List<File> fileList = new ArrayList<File>();
         for (File file : files) {
             if (isValidate(context, file.getAbsolutePath())) {
