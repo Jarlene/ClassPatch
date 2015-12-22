@@ -14,13 +14,12 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
+import com.baidu.music.classlib.dex.MultiDex;
 import com.baidu.music.classlib.jni.HookBridge;
 import com.baidu.music.classlib.listener.FileOperatorListener;
 import com.baidu.music.classlib.manager.HookManager;
 import com.baidu.music.classlib.manager.ResourceManager;
-import com.baidu.music.classlib.resource.PatchContext;
 import com.baidu.music.classlib.resource.PatchResource;
-import com.baidu.music.classlib.utils.ApkUtils;
 
 import java.io.File;
 import java.lang.reflect.Method;
@@ -36,6 +35,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         @Override
         public void notifyCompleted() {
             Toast.makeText(mContext, "复制成功",Toast.LENGTH_SHORT).show();
+            MultiDex.addAllDexFile(mContext,
+                    HookManager.getInstance().getPatchDir(mContext).getAbsolutePath(),
+                    HookManager.getInstance().getPatchOptDir(mContext).getAbsolutePath());
         }
 
         @Override

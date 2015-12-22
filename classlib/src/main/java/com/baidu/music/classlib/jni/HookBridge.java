@@ -87,6 +87,13 @@ public final class HookBridge {
         }
     }
 
+    public static void switchOpenResolved(boolean open) {
+        if (isArt) {
+            return;
+        }
+        closeOrOpenGetResolvedClass(open);
+    }
+
     /**
      * 添加过滤的class名，用于实时生效。
      * @param clazzNames
@@ -110,5 +117,7 @@ public final class HookBridge {
                                                    String oldSymbol, String newSymbol);
 
     private static native void classesResolvedFilter(String[] classNames);
+
+    private static native void closeOrOpenGetResolvedClass(boolean close);
 
 }

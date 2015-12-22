@@ -113,7 +113,7 @@ public class HookManager extends BaseManager<String, File>{
             File apkFile = new File(apkPath);
             if (apkFile.getAbsolutePath().endsWith(".apk")) {
                 if (ApkUtils.getPackageInfo(context, apkPath) != null
-                        && signture.equals(ApkUtils.getApkSignatures(context,apkPath)[0])) {
+                        /*&& signture.equals(ApkUtils.getApkSignatures(context,apkPath)[0])*/) {
                     validate = true;
                 }
             }
@@ -142,7 +142,7 @@ public class HookManager extends BaseManager<String, File>{
         if (context == null || files == null) {
             throw new NullPointerException("Context is null or files is Empty");
         }
-        checkSignture();
+//        checkSignture();
         List<File> fileList = new ArrayList<File>();
         for (File file : files) {
             if (isValidate(context, file.getAbsolutePath())) {

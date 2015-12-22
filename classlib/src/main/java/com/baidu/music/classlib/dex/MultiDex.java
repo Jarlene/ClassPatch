@@ -192,18 +192,24 @@ public final class MultiDex {
                 ClassLoader classLoader = context.getClassLoader();
                 List<File> fileList = HookManager.getInstance().patchFileFilter(context, dexFiles);
                 installSecondaryDexes(classLoader, optimizedDirectory, fileList);
-//                List<String> classNameList = new ArrayList<String>();
-//                for (File file : dexFiles) {
-//                    DexFile dexFile = DexFile.loadDex(file.getAbsolutePath(), optimizedDirectory
-//                            + File.separator + FileUtils.getFileNameWithOutPostfix(file.getAbsolutePath())
-//                            + ".odex", 0);
-//                    Enumeration<String> classNames = dexFile.entries();
-//                    while (classNames.hasMoreElements()) {
-//                        String className = classNames.nextElement();
-//                        classNameList.add("L" + className.replace(".", "/"));
-//                    }
-//                }
-//                HookBridge.classesFilter(classNameList);
+                // 开启实时生效模式
+                HookBridge.switchOpenResolved(false);
+                for (File file : dexFiles) {
+                    DexFile dexFile = DexFile.loadDex(file.getAbsolutePath(), optimizedDirectory
+                            + File.separator + FileUtils.getFileNameWithOutPostfix(file.getAbsolutePath())
+                            + ".odex", 0);
+                    Enumeration<String> classNames = dexFile.entries();
+                    while (classNames.hasMoreElements()) {
+                        String className = classNames.nextElement();
+                        try {
+                            Class<?> clazz = classLoader.loadClass(className);
+                        } catch (ClassNotFoundException e) {
+                            continue;
+                        }
+                    }
+                }
+                HookBridge.switchOpenResolved(true);
+
             } catch (IllegalAccessException e) {
                 e.printStackTrace();
             } catch (NoSuchFieldException e) {

@@ -37,8 +37,8 @@ extern void __attribute__ ((visibility ("hidden"))) HookNativeMethod(JNIEnv* env
         void* pluginNativeMethod = dvmDlsym(newHandle, new_symbol);
         LOGD("the new so method addr is %p", pluginNativeMethod);
         addElfHook(old_so_name, old_symbol, pluginNativeMethod);
-//        void* oldHandle = elfLoadLibrary(old_so_name);
-//        elfHookSymbol(oldHandle, old_symbol, (void**)&pluginNativeMethod);
+        void* oldHandle = elfLoadLibrary(old_so_name);
+        elfHookSymbol(oldHandle, old_symbol, (void**)&pluginNativeMethod);
     }
 
 }

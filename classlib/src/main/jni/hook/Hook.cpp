@@ -22,6 +22,8 @@ extern void HookNativeMethod(JNIEnv* env, jstring oldSoName, jstring newSoName, 
 
 extern void DalvikFilterClass(JNIEnv* env, jstring className);
 
+extern void resolveOpenHot(JNIEnv* env, jboolean open);
+
 static bool isArtModel;
 static jclass mainClass;
 
@@ -74,6 +76,10 @@ static void classesFilter(JNIEnv* env, jclass clazz, jobjectArray classArray) {
     }
 }
 
+static void OpenOrCloseHot(JNIEnv* env, jclass clazz, jboolean open) {
+    resolveOpenHot(env, open);
+}
+
 static void HookNativeMethodSo(JNIEnv* env, jclass clazz, jstring oldSoName, jstring newSoName, jstring oldSymbol, jstring newSymbol) {
     HookNativeMethod(env, oldSoName, newSoName, oldSymbol, newSymbol);
     testString(env);
@@ -101,7 +107,8 @@ static JNINativeMethod nativeMethods[] = {
         { "initHookEnv", "(ZI)Z", (void*)initHookEnv },
         { "replaceJavaMethod", "(Ljava/lang/reflect/Member;Ljava/lang/reflect/Member;)V", (void*)HookJavaMethod },
         { "replaceNativeMethod", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V", (void*)HookNativeMethodSo },
-        { "classesResolvedFilter", "([Ljava/lang/String;)V", (void*) classesFilter}
+        { "classesResolvedFilter", "([Ljava/lang/String;)V", (void*) classesFilter},
+        { "closeOrOpenGetResolvedClass", "(Z)V", (void*) OpenOrCloseHot}
 };
 
 

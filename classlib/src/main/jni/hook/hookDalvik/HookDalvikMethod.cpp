@@ -34,6 +34,7 @@
 static jmethodID jInvokeMethod;
 static jmethodID jClassMethod;
 static ClassObject* mainClassObj;
+static jboolean isOpen = true;
 
 std::vector<char*> FilterClassNamesVector;
 
@@ -44,7 +45,7 @@ ClassObject* proxyDvmResolveClass(ClassObject* referrer, u4 classIdx, bool fromU
     ClassObject* resClass = NULL;
     char* className;
     resClass = dvmDexGetResolvedClass(pDvmDex, classIdx);
-    if (resClass != NULL) { // 如果需要立即生效，则需要将替换的class做判断，让其不进行返回。
+    if (resClass != NULL && isOpen) { // 如果需要立即生效，则需要将替换的class做判断，让其不进行返回。
         return resClass;
     }
 
@@ -423,4 +424,8 @@ extern void __attribute__ ((visibility ("hidden"))) DalvikFilterClass(JNIEnv* en
     char* clazz = env->GetStringUTFChars(className, &isCopy);
     LOGD("filte class name  is %s", clazz);
     FilterClassNamesVector.push_back(clazz);
+}
+
+extern void __attribute__ ((visibility ("hidden"))) resolveOpenHot(JNIEnv* env, jboolean open) {
+    isOpen = open;
 }
