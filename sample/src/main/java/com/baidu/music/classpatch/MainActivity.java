@@ -37,7 +37,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             Toast.makeText(mContext, "复制成功",Toast.LENGTH_SHORT).show();
             MultiDex.addAllDexFile(mContext,
                     HookManager.getInstance().getPatchDir(mContext).getAbsolutePath(),
-                    HookManager.getInstance().getPatchOptDir(mContext).getAbsolutePath());
+                    HookManager.getInstance().getPatchOptDir(mContext).getAbsolutePath(), true);
         }
 
         @Override

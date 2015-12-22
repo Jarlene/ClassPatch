@@ -100,7 +100,7 @@ public final class MultiDex {
      * @param srcDir
      * @param optimizedDir
      */
-    public static void addAllDexFile(Context context, String srcDir, String optimizedDir) {
+    public static void addAllDexFile(Context context, String srcDir, String optimizedDir,  boolean shouldRealTime) {
         if (context == null || TextUtils.isEmpty(srcDir) || TextUtils.isEmpty(optimizedDir)) {
             Log.d(TAG, "context is null or srcDir is null or optimizedDir is null");
             return;
@@ -122,7 +122,7 @@ public final class MultiDex {
         if (!optFileDirectory.exists() || optFileDirectory.isFile()) {
             optFileDirectory.mkdirs();
         }
-        addDexFileAutoInstall(context, fileList, optFileDirectory);
+        addDexFileAutoInstall(context, fileList, optFileDirectory, shouldRealTime);
     }
 
 
@@ -145,11 +145,12 @@ public final class MultiDex {
      *
      * @param dexFile
      */
-    public static void addDexFileAutoInstall(Context context, List<File> dexFile, File optimizedDirectory) {
+    public static void addDexFileAutoInstall(Context context, List<File> dexFile,
+                                             File optimizedDirectory, boolean shouldRealTime) {
         if (dexFile != null && !dexFile.isEmpty() && !dexFiles.contains(dexFile)) {
             dexFiles.addAll(dexFile);
             Log.d(TAG, "add other dex file");
-            installDexFile(context, optimizedDirectory);
+            installDexFile(context, optimizedDirectory, shouldRealTime);
         }
     }
 
@@ -159,11 +160,12 @@ public final class MultiDex {
      *
      * @param dexFile
      */
-    public static void addDexFileAutoInstall(Context context, File dexFile, File optimizedDirectory) {
+    public static void addDexFileAutoInstall(Context context, File dexFile, File optimizedDirectory,
+                                             boolean shouldRealTime) {
         if (dexFile != null && dexFile.exists() && !dexFiles.contains(dexFile)) {
             dexFiles.add(dexFile);
             Log.d(TAG, "add other dex file " + dexFile.getName());
-            installDexFile(context, optimizedDirectory);
+            installDexFile(context, optimizedDirectory, shouldRealTime);
         }
     }
 
@@ -185,31 +187,32 @@ public final class MultiDex {
      *
      * @param context
      */
-    public static void installDexFile(Context context, File optimizedDirectory) {
+    public static void installDexFile(Context context, File optimizedDirectory, boolean shouldRealTime) {
         if (checkValidZipFiles(dexFiles)) {
             try {
 
                 ClassLoader classLoader = context.getClassLoader();
                 List<File> fileList = HookManager.getInstance().patchFileFilter(context, dexFiles);
                 installSecondaryDexes(classLoader, optimizedDirectory, fileList);
-                // 开启实时生效模式
-                HookBridge.switchOpenResolved(false);
-                for (File file : dexFiles) {
-                    DexFile dexFile = DexFile.loadDex(file.getAbsolutePath(), optimizedDirectory
-                            + File.separator + FileUtils.getFileNameWithOutPostfix(file.getAbsolutePath())
-                            + ".odex", 0);
-                    Enumeration<String> classNames = dexFile.entries();
-                    while (classNames.hasMoreElements()) {
-                        String className = classNames.nextElement();
-                        try {
-                            Class<?> clazz = classLoader.loadClass(className);
-                        } catch (ClassNotFoundException e) {
-                            continue;
+                if (shouldRealTime) {
+                    // 开启实时生效模式
+                    HookBridge.switchOpenResolved(false);
+                    for (File file : dexFiles) {
+                        DexFile dexFile = DexFile.loadDex(file.getAbsolutePath(), optimizedDirectory
+                                + File.separator + FileUtils.getFileNameWithOutPostfix(file.getAbsolutePath())
+                                + ".odex", 0);
+                        Enumeration<String> classNames = dexFile.entries();
+                        while (classNames.hasMoreElements()) {
+                            String className = classNames.nextElement();
+                            try {
+                                Class<?> clazz = classLoader.loadClass(className);
+                            } catch (ClassNotFoundException e) {
+                                continue;
+                            }
                         }
                     }
+                    HookBridge.switchOpenResolved(true);
                 }
-                HookBridge.switchOpenResolved(true);
-
             } catch (IllegalAccessException e) {
                 e.printStackTrace();
             } catch (NoSuchFieldException e) {

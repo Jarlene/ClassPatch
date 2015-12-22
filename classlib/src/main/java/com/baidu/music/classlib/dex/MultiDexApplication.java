@@ -44,6 +44,6 @@ public class MultiDexApplication extends Application {
     MultiDex.install(this);
     HookBridge.initJNIEnv();
     MultiDex.addAllDexFile(base, HookManager.getInstance().getPatchDir(base).getAbsolutePath(),
-            HookManager.getInstance().getPatchOptDir(base).getAbsolutePath());
+            HookManager.getInstance().getPatchOptDir(base).getAbsolutePath(), false);
   }
 }
