@@ -49,4 +49,37 @@ public abstract class BaseManager<K, V> {
             return patchMap.get(key);
         }
     }
+
+    /**
+     * 是否包含key
+     * @param key
+     * @return
+     */
+    public boolean isContainKey(K key) {
+        synchronized (lockObj) {
+            return patchMap.containsKey(key);
+        }
+    }
+
+    /**
+     * 是否包含Value
+     * @param value
+     * @return
+     */
+    public boolean isContainValue(V value) {
+        synchronized (lockObj) {
+            return patchMap.containsValue(value);
+        }
+    }
+
+    /**
+     * 是否包含某个元素
+     * @param obj
+     * @return
+     */
+    public boolean isContain(Object obj) {
+        synchronized (lockObj) {
+            return patchMap.contains(obj);
+        }
+    }
 }
