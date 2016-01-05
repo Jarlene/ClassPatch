@@ -98,6 +98,7 @@ public final class HookBridge {
      * 添加过滤的class名，用于实时生效。
      * @param clazzNames
      */
+    @Deprecated
     public static void classesFilter(List<String> clazzNames) {
         if (clazzNames != null && !clazzNames.isEmpty()) {
             String[] clazz = new String[clazzNames.size()];
