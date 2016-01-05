@@ -1,14 +1,15 @@
 package com.baidu.music.classlib.manager;
 
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * 基础管理类
  * Created by Jarlene on 2015/12/7.
  */
 public abstract class BaseManager<K, V> {
-    protected final ConcurrentHashMap<K, V> patchMap = new ConcurrentHashMap<K, V>();
-    protected final Object lockObj = new Object();
+    protected final Map<K, V> patchMap = Collections.synchronizedMap(new HashMap<K, V>());
 
     /**
      * 添加Item
@@ -16,9 +17,7 @@ public abstract class BaseManager<K, V> {
      * @param value
      */
     public void addItem(K key, V value){
-        synchronized (lockObj) {
-            patchMap.put(key, value);
-        }
+        patchMap.put(key, value);
     }
 
     /**
@@ -26,10 +25,8 @@ public abstract class BaseManager<K, V> {
      * @param key
      */
     public void removeItem(K key){
-        synchronized (lockObj) {
-            if (patchMap.containsKey(key)) {
-                patchMap.remove(key);
-            }
+        if (patchMap.containsKey(key)) {
+            patchMap.remove(key);
         }
     }
 
@@ -37,7 +34,7 @@ public abstract class BaseManager<K, V> {
      * 获取Map
      * @return
      */
-    public ConcurrentHashMap<K, V> getHashmap(){
+    public Map<K, V> getHashmap(){
         return patchMap;
     }
 
@@ -45,9 +42,7 @@ public abstract class BaseManager<K, V> {
      * 得到Item
      */
     public V getItem(K key){
-        synchronized (lockObj) {
-            return patchMap.get(key);
-        }
+        return patchMap.get(key);
     }
 
     /**
@@ -56,9 +51,7 @@ public abstract class BaseManager<K, V> {
      * @return
      */
     public boolean isContainKey(K key) {
-        synchronized (lockObj) {
-            return patchMap.containsKey(key);
-        }
+        return patchMap.containsKey(key);
     }
 
     /**
@@ -67,19 +60,7 @@ public abstract class BaseManager<K, V> {
      * @return
      */
     public boolean isContainValue(V value) {
-        synchronized (lockObj) {
-            return patchMap.containsValue(value);
-        }
+        return patchMap.containsValue(value);
     }
 
-    /**
-     * 是否包含某个元素
-     * @param obj
-     * @return
-     */
-    public boolean isContain(Object obj) {
-        synchronized (lockObj) {
-            return patchMap.contains(obj);
-        }
-    }
 }
