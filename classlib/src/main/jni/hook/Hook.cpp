@@ -48,7 +48,7 @@ extern "C" void testString(JNIEnv* env) {
 
 static bool initHookEnv(JNIEnv* env, jclass clazz, jboolean isArt, jint apiLevel) {
     isArtModel = isArt;
-    LOGV("the runtime api level is %d, android's model is ", (int)apiLevel, (isArt ? "art" : "dalvik"));
+    LOGV("the runtime api level is %d, android's model is %s", (int)apiLevel, (isArt ? "art" : "dalvik"));
     if (isArt) {
         ArtModelInit(env, (int) apiLevel);
     } else {
@@ -89,7 +89,7 @@ static void HookNativeMethodSo(JNIEnv* env, jclass clazz, jstring oldSoName, jst
 static int registerNativeMethods(JNIEnv* env, const char* className,
                                  JNINativeMethod* gMethods, int numMethods) {
     jclass clazz= env->FindClass(className);
-    mainClass = clazz;
+    mainClass = env->NewGlobalRef(clazz);
     if (clazz == NULL) {
         return JNI_FALSE;
     }
