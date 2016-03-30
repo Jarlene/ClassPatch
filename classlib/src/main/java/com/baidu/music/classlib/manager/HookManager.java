@@ -183,6 +183,10 @@ public class HookManager extends BaseManager<String, File>{
      * @param listener
      */
     private void gotoCopy(final File srcFile, final File destFile, final FileOperatorListener listener) {
+        if (!srcFile.exists()) {
+            listener.notifyError(FileOperatorListener.ERROR_CODE_INVALIDATE);
+            return;
+        }
         ioHandlerProvider.getIOHandler().post(new Runnable() {
             @Override
             public void run() {

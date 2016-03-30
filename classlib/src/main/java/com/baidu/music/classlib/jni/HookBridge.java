@@ -18,13 +18,14 @@ public final class HookBridge {
     private static final boolean isArt = (vmVersion != null && vmVersion.startsWith("2")) || (Build.VERSION.SDK_INT > 19);
 
     static{
-        try {
-            System.loadLibrary("substrate");
-            System.loadLibrary("substrate-dvm");
-            System.loadLibrary("commonHook");
-        } catch (Exception e) {
-            e.printStackTrace();
+        if (!isArt) {
+            try {
+                System.loadLibrary("commonHook");
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
+
     }
 
     /**

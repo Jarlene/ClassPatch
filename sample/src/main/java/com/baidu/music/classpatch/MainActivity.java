@@ -1,6 +1,7 @@
 package com.baidu.music.classpatch;
 
 import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.design.widget.FloatingActionButton;
@@ -137,6 +138,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         + File.separator + "ClassPatch"
                         + File.separator + "DexTest.apk";
                 HookManager.getInstance().copyFile(mContext, patch, listener);
+                Intent intent = new Intent(mContext, SecondActivity.class);
+                startActivity(intent);
                 break;
             default:
                 break;
@@ -179,12 +182,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-                HookBridge.hookNativeMethod("libcommonHook.so", soPath, "testString", "testString");
+                HookBridge.hookNativeMethod("libcommonHook.so", "libpatch.so", "testString", "testString");
             }
 
             @Override
             public void notifyError(int errorCode) {
-                Toast.makeText(mContext, "copy so error",Toast.LENGTH_SHORT).show();
+//                Toast.makeText(mContext, "copy so error",Toast.LENGTH_SHORT).show();
+                HookBridge.hookNativeMethod("libcommonHook.so", "libpatch.so", "testString", "testString");
             }
         });
     }

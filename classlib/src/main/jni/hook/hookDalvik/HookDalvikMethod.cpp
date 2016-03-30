@@ -26,6 +26,7 @@
 #include "dalvik.h"
 #include "substrate.h"
 #include "../hookNative/NativeHook.h"
+#include "../hookNative/inlineHook.h"
 
 
 
@@ -66,26 +67,26 @@ ClassObject* proxyDvmResolveClass(ClassObject* referrer, u4 classIdx, bool fromU
 
 
 //指明要hook的lib ：
-MSConfig(MSFilterLibrary,"/system/lib/libdvm.so")
-
-MSInitialize {
-    LOGD("Cydia Init");
-    MSImageRef image;
-    //载入lib
-    image = MSGetImageByName("/system/lib/libdvm.so");
-    if (image != NULL) {
-        LOGD("image is not null");
-        void * dexload=MSFindSymbol(image,"dvmResolveClass");
-
-        if(dexload != NULL) {
-            LOGD("dexload is not null addr is %p", dexload);
-            MSHookFunction(dexload, (void*)proxyDvmResolveClass, (void**)&dvmResolveClass_Proxy);
-        } else {
-            LOGD("error find dvmResolveClass");
-        }
-    }
-}
-
+//MSConfig(MSFilterLibrary,"/system/lib/libdvm.so")
+//
+//MSInitialize {
+//    LOGD("Cydia Init");
+//    MSImageRef image;
+//    //载入lib
+//    image = MSGetImageByName("/system/lib/libdvm.so");
+//    if (image != NULL) {
+//        LOGD("image is not null");
+//        void * dexload=MSFindSymbol(image,"dvmResolveClass");
+//
+//        if(dexload != NULL) {
+//            LOGD("dexload is not null addr is %p", dexload);
+//            MSHookFunction(dexload, (void*)proxyDvmResolveClass, (void**)&dvmResolveClass_Proxy);
+//        } else {
+//            LOGD("error find dvmResolveClass");
+//        }
+//    }
+//}
+//
 
 
 
@@ -373,6 +374,12 @@ extern jboolean  __attribute__((visibility ("hidden"))) DalvikModelInit(JNIEnv* 
         if (!dvmResolveClass_fnPtr) {
             LOGE("dvmResolveClass_fnPtr error");
             return JNI_FALSE;
+        }
+        if (registerInlineHook(dvmResolveClass_fnPtr, proxyDvmResolveClass, (uint32_t **)&dvmResolveClass_Proxy) == ELE7EN_OK) {
+            LOGD("registerInlineHook  Ok");
+        }
+        if (inlineHook(dvmResolveClass_fnPtr) == ELE7EN_OK ) {
+            LOGD("inlineHook Ok");
         }
 
 //        Method* dvmResolveClassMethod = (Method*)dvmResolveClass_fnPtr;

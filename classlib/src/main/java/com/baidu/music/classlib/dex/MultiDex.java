@@ -205,7 +205,12 @@ public final class MultiDex {
                         while (classNames.hasMoreElements()) {
                             String className = classNames.nextElement();
                             try {
+                                // 由于ClassLoader采用双亲委托机制，所以如果已经加载的class,
+                                // 会从父classloader中获得，这个时候，patch实时生效功能就会失效
                                 Class<?> clazz = classLoader.loadClass(className);
+                                if (clazz != null) {
+                                    Log.d(TAG, clazz.getName());
+                                }
                             } catch (ClassNotFoundException e) {
                                 continue;
                             }

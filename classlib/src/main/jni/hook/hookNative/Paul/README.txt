@@ -1,5 +1,0 @@
-入口为下面3个函数
-Java_com_example_myndk_MainActivity_testLib
-Java_com_example_myndk_MainActivity_readLib
-Hook
-实现方式一样，只不过Hook将所有的Elf文件信息保存在了ElfInfo中，所以程序有两部分，一部分是ElfInfo为参数，一部分是直接将Elf信息的地址传入
