@@ -14,4 +14,5 @@
     2、目录下面的patch是已经生成的patch apk，可以直接用，将其放进sdcard中，并重命名为ClassPatch
     3、so hook 是正在研究的项目，有兴趣的可以一起讨论一下。sample中so替换功能是不能实现的。
     4、现在已经基本实现dalvik系统中patch实时生效的能力。原理是在proxyDvmResolveClass增加标识，不选择从dvmDexGetResolvedClass获取class。
+    5、实现so hook功能，现在已经实现了
 
