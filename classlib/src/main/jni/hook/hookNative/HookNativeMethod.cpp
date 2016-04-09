@@ -5,7 +5,8 @@
 #include "NativeElfHook.h"
 #include "NativeHook.h"
 #include "TKHooklib.h"
-#include "inlineHook.h"
+
+#include "NativeInlineHook.h"
 
 #include <dlfcn.h>
 #include <stdio.h>
@@ -69,10 +70,10 @@ extern void __attribute__ ((visibility ("hidden"))) HookNativeMethod(JNIEnv* env
 
     void* OldFunc = NULL;
 
-    if (registerInlineHook(oldMethod, pluginNativeMethod, (uint32_t **)&OldFunc) == ELE7EN_OK) {
+    if (registerInlineHook(oldMethod, pluginNativeMethod, (uint32_t **)&OldFunc) == INLINE_HOOK_OK) {
         LOGD("registerInlineHook  Ok");
     }
-    if (inlineHook(oldMethod) == ELE7EN_OK ) {
+    if (inlineHook(oldMethod) == INLINE_HOOK_OK ) {
         LOGD("inlineHook Ok");
     }
 

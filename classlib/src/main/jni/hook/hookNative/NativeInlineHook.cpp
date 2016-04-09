@@ -1,11 +1,7 @@
-/*
-thumb16 thumb32 arm32 inlineHook
-author: ele7enxxh
-mail: ele7enxxh@qq.com
-website: ele7enxxh.com
-modified time: 2015-01-23
-created time: 2015-11-30
-*/
+//
+// Created by Jarlene on 2016/4/9.
+//
+
 
 #include <stdlib.h>
 #include <stdbool.h>
@@ -13,12 +9,11 @@ created time: 2015-11-30
 #include <dirent.h>
 #include <signal.h>
 #include <sys/mman.h>
-// #include <asm/ptrace.h>
 #include <sys/wait.h>
 #include <sys/ptrace.h>
 #include <unistd.h>
 #include "relocate.h"
-#include "inlineHook.h"
+#include "NativeInlineHook.h"
 
 #ifndef PAGE_SIZE
 #define PAGE_SIZE 4096
@@ -31,13 +26,10 @@ created time: 2015-11-30
 
 #define ACTION_ENABLE	0
 #define ACTION_DISABLE	1
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-enum hook_status {
-	REGISTERED,
-	HOOKED,
-};
 
 struct inlineHookItem {
 	uint32_t target_addr;
@@ -59,6 +51,7 @@ struct inlineHookInfo {
 };
 
 static struct inlineHookInfo info = {0};
+
 
 static int getAllTids(pid_t pid, pid_t *tids) {
 	char dir_path[32];
@@ -90,6 +83,7 @@ static int getAllTids(pid_t pid, pid_t *tids) {
     return i;
 }
 
+
 static bool doProcessThreadPC(struct inlineHookItem *item, struct pt_regs *regs, int action) {
 	int offset;
 	int i;
@@ -119,6 +113,7 @@ static bool doProcessThreadPC(struct inlineHookItem *item, struct pt_regs *regs,
 	return false;
 }
 
+
 static void processThreadPC(pid_t tid, struct inlineHookItem *item, int action) {
 	struct pt_regs regs;
 
@@ -140,6 +135,7 @@ static void processThreadPC(pid_t tid, struct inlineHookItem *item, int action) 
 	}
 }
 
+
 static pid_t freeze(struct inlineHookItem *item, int action) {
 	int count;
 	pid_t tids[1024];
@@ -159,8 +155,8 @@ static pid_t freeze(struct inlineHookItem *item, int action) {
 					processThreadPC(tids[i], item, action);
 				}
 			}
-			
-			raise(SIGSTOP);	
+
+			raise(SIGSTOP);
 
 			for (i = 0; i < count; ++i) {
 				ptrace(PTRACE_DETACH, tids[i], NULL, NULL);
@@ -177,6 +173,7 @@ static pid_t freeze(struct inlineHookItem *item, int action) {
 	return pid;
 }
 
+
 static void unFreeze(pid_t pid) {
 	if (pid < 0) {
 		return;
@@ -189,6 +186,7 @@ static void unFreeze(pid_t pid) {
 		}
 	}
 }
+
 
 static bool isExecutableAddr(uint32_t addr) {
 	FILE *fp;
@@ -217,6 +215,7 @@ static bool isExecutableAddr(uint32_t addr) {
 	return false;
 }
 
+
 static struct inlineHookItem *findInlineHookItem(uint32_t target_addr) {
 	int i;
 
@@ -242,29 +241,28 @@ static struct inlineHookItem *addInlineHookItem() {
 	return item;
 }
 
-static void deleteInlineHookItem(int pos)
-{
+static void deleteInlineHookItem(int pos) {
 	info.item[pos] = info.item[info.size - 1];
 	--info.size;
 }
 
-enum ele7en_status registerInlineHook(uint32_t target_addr, uint32_t new_addr, uint32_t **proto_addr) {
+enum InlineHook_Status registerInlineHook(uint32_t target_addr, uint32_t new_addr, uint32_t **proto_addr) {
 	struct inlineHookItem *item;
 
 	if (!isExecutableAddr(target_addr) || !isExecutableAddr(new_addr)) {
-		return ELE7EN_ERROR_NOT_EXECUTABLE;
+		return INLINE_HOOK_ERROR_NOT_EXECUTABLE;
 	}
 
 	item = findInlineHookItem(target_addr);
 	if (item != NULL) {
 		if (item->status == REGISTERED) {
-			return ELE7EN_ERROR_ALREADY_REGISTERED;
+			return INLINE_HOOK_ERROR_ALREADY_REGISTERED;
 		}
 		else if (item->status == HOOKED) {
-			return ELE7EN_ERROR_ALREADY_HOOKED;
+			return INLINE_HOOK_ERROR_ALREADY_HOOKED;
 		}
 		else {
-			return ELE7EN_ERROR_UNKNOWN;
+			return INLINE_HOOK_ERROR_UNKNOWN;
 		}
 	}
 
@@ -283,8 +281,9 @@ enum ele7en_status registerInlineHook(uint32_t target_addr, uint32_t new_addr, u
 
 	item->status = REGISTERED;
 
-	return ELE7EN_OK;
+	return INLINE_HOOK_OK;
 }
+
 
 static void doInlineUnHook(struct inlineHookItem *item, int pos) {
 	mprotect((void *) PAGE_START(CLEAR_BIT0(item->target_addr)), PAGE_SIZE, PROT_READ | PROT_WRITE | PROT_EXEC);
@@ -298,7 +297,7 @@ static void doInlineUnHook(struct inlineHookItem *item, int pos) {
 	cacheflush(CLEAR_BIT0(item->target_addr), CLEAR_BIT0(item->target_addr) + item->length, 0);
 }
 
-enum ele7en_status inlineUnHook(uint32_t target_addr) {
+enum InlineHook_Status inlineUnHook(uint32_t target_addr) {
 	int i;
 
 	for (i = 0; i < info.size; ++i) {
@@ -311,11 +310,11 @@ enum ele7en_status inlineUnHook(uint32_t target_addr) {
 
 			unFreeze(pid);
 
-			return ELE7EN_OK;
+			return INLINE_HOOK_OK;
 		}
 	}
 
-	return ELE7EN_ERROR_NOT_HOOKED;
+	return INLINE_HOOK_ERROR_NOT_HOOKED;
 }
 
 void inlineUnHookAll() {
@@ -360,11 +359,11 @@ static void doInlineHook(struct inlineHookItem *item) {
 	}
 
 	item->status = HOOKED;
-	
+
 	cacheflush(CLEAR_BIT0(item->target_addr), CLEAR_BIT0(item->target_addr) + item->length, 0);
 }
 
-enum ele7en_status inlineHook(uint32_t target_addr) {
+enum InlineHook_Status inlineHook(uint32_t target_addr) {
 	int i;
 	struct inlineHookItem *item;
 
@@ -377,25 +376,19 @@ enum ele7en_status inlineHook(uint32_t target_addr) {
 	}
 
 	if (item == NULL) {
-		return ELE7EN_ERROR_NOT_REGISTERED;
+		return INLINE_HOOK_ERROR_NOT_REGISTERED;
 	}
 
 	if (item->status == REGISTERED) {
 		pid_t pid;
-
 		pid = freeze(item, ACTION_ENABLE);
-
 		doInlineHook(item);
-
 		unFreeze(pid);
-
-		return ELE7EN_OK;
-	}
-	else if (item->status == HOOKED) {
-		return ELE7EN_ERROR_ALREADY_HOOKED;
-	}
-	else {
-		return ELE7EN_ERROR_UNKNOWN;
+		return INLINE_HOOK_OK;
+	} else if (item->status == HOOKED) {
+		return INLINE_HOOK_ERROR_ALREADY_HOOKED;
+	} else {
+		return INLINE_HOOK_ERROR_UNKNOWN;
 	}
 }
 
@@ -413,6 +406,7 @@ void inlineHookAll() {
 
 	unFreeze(pid);
 }
+
 #ifdef __cplusplus
 };
 #endif

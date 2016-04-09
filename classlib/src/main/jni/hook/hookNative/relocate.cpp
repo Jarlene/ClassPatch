@@ -1,11 +1,6 @@
-/*
-relocate instruction
-author: ele7enxxh
-mail: ele7enxxh@qq.com
-website: ele7enxxh.com
-modified time: 2015-01-23
-created time: 2015-01-17
-*/
+//
+// Created by Jarlene on 2016/4/9.
+//
 
 #include "relocate.h"
 

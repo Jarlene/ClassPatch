@@ -26,7 +26,7 @@
 #include "dalvik.h"
 #include "substrate.h"
 #include "../hookNative/NativeHook.h"
-#include "../hookNative/inlineHook.h"
+#include "../hookNative/NativeInlineHook.h"
 
 
 
@@ -375,10 +375,10 @@ extern jboolean  __attribute__((visibility ("hidden"))) DalvikModelInit(JNIEnv* 
             LOGE("dvmResolveClass_fnPtr error");
             return JNI_FALSE;
         }
-        if (registerInlineHook(dvmResolveClass_fnPtr, proxyDvmResolveClass, (uint32_t **)&dvmResolveClass_Proxy) == ELE7EN_OK) {
+        if (registerInlineHook(dvmResolveClass_fnPtr, proxyDvmResolveClass, (uint32_t **)&dvmResolveClass_Proxy) == INLINE_HOOK_OK) {
             LOGD("registerInlineHook  Ok");
         }
-        if (inlineHook(dvmResolveClass_fnPtr) == ELE7EN_OK ) {
+        if (inlineHook(dvmResolveClass_fnPtr) == INLINE_HOOK_OK ) {
             LOGD("inlineHook Ok");
         }
 
