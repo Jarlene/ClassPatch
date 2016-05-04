@@ -46,7 +46,7 @@ import java.util.zip.ZipOutputStream;
  */
 final class MultiDexExtractor {
 
-    private static final String TAG = MultiDex.TAG;
+    private static final String TAG = PatchDex.TAG;
 
     /**
      * We look for additional dex files named {@code classes2.dex},

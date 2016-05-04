@@ -1,41 +1,30 @@
 //
-// Created by Jarlene on 2016/4/9.
+// Created by Administrator on 2016/5/4.
 //
-#include <stdio.h>
 
 #ifndef CLASSPATCH_NATIVEINLINEHOOK_H
 #define CLASSPATCH_NATIVEINLINEHOOK_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "../../base/log.h"
 
-enum InlineHook_Status {
-	INLINE_HOOK_ERROR_UNKNOWN = -1,
-	INLINE_HOOK_OK = 0,
-	INLINE_HOOK_ERROR_NOT_INITIALIZED,
-	INLINE_HOOK_ERROR_NOT_EXECUTABLE,
-	INLINE_HOOK_ERROR_NOT_REGISTERED,
-	INLINE_HOOK_ERROR_NOT_HOOKED,
-	INLINE_HOOK_ERROR_ALREADY_REGISTERED,
-	INLINE_HOOK_ERROR_ALREADY_HOOKED,
-	INLINE_HOOK_ERROR_SO_NOT_FOUND,
-	INLINE_HOOK_ERROR_FUNCTION_NOT_FOUND
+#define LOG_TAG "NativeInlineHook"
+
+struct hook_t {
+	unsigned int jump[3];
+	unsigned int store[3];
+	unsigned char jumpt[20];
+	unsigned char storet[20];
+	unsigned int orig;
+	unsigned int patch;
+	unsigned char thumb;
+	unsigned char name[128];
+	void *data;
 };
 
-enum hook_status {
-	REGISTERED,
-	HOOKED,
-};
-
-enum InlineHook_Status registerInlineHook(uint32_t target_addr, uint32_t new_addr, uint32_t **proto_addr);
-enum InlineHook_Status inlineUnHook(uint32_t target_addr);
-void inlineUnHookAll();
-enum InlineHook_Status inlineHook(uint32_t target_addr);
-void inlineHookAll();
-
-#ifdef __cplusplus
-};
-#endif
+void hook_cacheflush(unsigned int begin, unsigned int end);
+void hook_precall(struct hook_t *h);
+void hook_postcall(struct hook_t *h);
+int hook(struct hook_t *h, int pid, char *libname, char *funcname, void *hook_arm, void *hook_thumb);
+void unhook(struct hook_t *h);
 
 #endif //CLASSPATCH_NATIVEINLINEHOOK_H

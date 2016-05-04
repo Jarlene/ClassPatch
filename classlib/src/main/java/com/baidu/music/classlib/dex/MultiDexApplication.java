@@ -24,7 +24,7 @@ import com.baidu.music.classlib.manager.HookManager;
 
 
 /**
- * Minimal MultiDex capable application. To use the legacy multidex library there is 3 possibility:
+ * Minimal PatchDex capable application. To use the legacy multidex library there is 3 possibility:
  * <ul>
  * <li>Declare this class as the application in your AndroidManifest.xml.</li>
  * <li>Have your {@link Application} extends this class.</li>
@@ -32,7 +32,7 @@ import com.baidu.music.classlib.manager.HookManager;
  * <code>
   protected void attachBaseContext(Context base) {<br>
     super.attachBaseContext(base);<br>
-    MultiDex.install(this);
+    PatchDex.install(this);
     </code></li>
  *   <ul>
  *       @modify by Jarlene on 2015/11/23.
@@ -41,9 +41,9 @@ public class MultiDexApplication extends Application {
   @Override
   protected void attachBaseContext(Context base) {
     super.attachBaseContext(base);
-    MultiDex.install(this);
+    PatchDex.install(this);
     HookBridge.initJNIEnv();
-    MultiDex.addAllDexFile(base, HookManager.getInstance().getPatchDir(base).getAbsolutePath(),
+    PatchDex.addAllDexFile(base, HookManager.getInstance().getPatchDir(base).getAbsolutePath(),
             HookManager.getInstance().getPatchOptDir(base).getAbsolutePath(), false);
   }
 }

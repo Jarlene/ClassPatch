@@ -1,412 +1,164 @@
 //
-// Created by Jarlene on 2016/4/9.
+// Created by Administrator on 2016/5/4.
 //
-
-
-#include <stdlib.h>
-#include <stdbool.h>
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <dlfcn.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <sys/select.h>
 #include <string.h>
-#include <dirent.h>
-#include <signal.h>
-#include <sys/mman.h>
-#include <sys/wait.h>
-#include <sys/ptrace.h>
-#include <unistd.h>
-#include "relocate.h"
+#include <termios.h>
+#include <pthread.h>
+#include <sys/epoll.h>
+#include <jni.h>
+
 #include "NativeInlineHook.h"
-
-#ifndef PAGE_SIZE
-#define PAGE_SIZE 4096
-#endif
-
-#define PAGE_START(addr)	(~(PAGE_SIZE - 1) & (addr))
-#define SET_BIT0(addr)		(addr | 1)
-#define CLEAR_BIT0(addr)	(addr & 0xFFFFFFFE)
-#define TEST_BIT0(addr)		(addr & 1)
-
-#define ACTION_ENABLE	0
-#define ACTION_DISABLE	1
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-struct inlineHookItem {
-	uint32_t target_addr;
-	uint32_t new_addr;
-	uint32_t **proto_addr;
-	void *orig_instructions;
-	int orig_boundaries[4];
-	int trampoline_boundaries[20];
-	int count;
-	void *trampoline_instructions;
-	int length;
-	int status;
-	int mode;
-};
-
-struct inlineHookInfo {
-	struct inlineHookItem item[1024];
-	int size;
-};
-
-static struct inlineHookInfo info = {0};
+#include "InlineUtils.h"
 
 
-static int getAllTids(pid_t pid, pid_t *tids) {
-	char dir_path[32];
-	DIR *dir;
+
+void inline hook_cacheflush(unsigned int begin, unsigned int end) {
+	const int syscall = 0xf0002;
+	__asm __volatile (
+		"mov	 r0, %0\n"
+		"mov	 r1, %1\n"
+		"mov	 r7, %2\n"
+		"mov     r2, #0x0\n"
+		"svc     0x00000000\n"
+		:
+		:	"r" (begin), "r" (end), "r" (syscall)
+		:	"r0", "r1", "r7"
+		);
+}
+
+int hook_direct(struct hook_t *h, unsigned int addr, void *hookf) {
 	int i;
-	struct dirent *entry;
-	pid_t tid;
 
-	if (pid < 0) {
-		snprintf(dir_path, sizeof(dir_path), "/proc/self/task");
+	LOGD("addr  = %x\n", addr);
+	LOGD("hookf = %x\n", hookf);
+
+	if ((addr % 4 == 0 && (unsigned int)hookf % 4 != 0) || (addr % 4 != 0 && (unsigned int)hookf % 4 == 0))
+		LOGD("addr 0x%x and hook 0x%x\n don't match!\n", addr, hookf);
+
+	//LOGD("ARM\n")
+	h->thumb = 0;
+	h->patch = (unsigned int)hookf;
+	h->orig = addr;
+	LOGD("orig = %x\n", h->orig);
+	h->jump[0] = 0xe59ff000; // LDR pc, [pc, #0]
+	h->jump[1] = h->patch;
+	h->jump[2] = h->patch;
+	for (i = 0; i < 3; i++)
+		h->store[i] = ((int*)h->orig)[i];
+	for (i = 0; i < 3; i++)
+		((int*)h->orig)[i] = h->jump[i];
+
+	hook_cacheflush((unsigned int)h->orig, (unsigned int)h->orig+sizeof(h->jumpt));
+	return 1;
+}
+
+int hook(struct hook_t *h, int pid, char *libname, char *funcname, void *hook_arm, void *hook_thumb) {
+	unsigned long int addr;
+	int i;
+
+	if (find_name(pid, funcname, libname, &addr) < 0) {
+		LOGD("can't find: %s\n", funcname);
+		return 0;
+	}
+
+	LOGD("hooking:   %s = 0x%x ", funcname, addr);
+	strncpy(h->name, funcname, sizeof(h->name)-1);
+
+	if (addr % 4 == 0) {
+		LOGD("ARM using 0x%x\n", hook_arm);
+		h->thumb = 0;
+		h->patch = (unsigned int)hook_arm;
+		h->orig = addr;
+		h->jump[0] = 0xe59ff000; // LDR pc, [pc, #0]
+		h->jump[1] = h->patch;
+		h->jump[2] = h->patch;
+		for (i = 0; i < 3; i++)
+			h->store[i] = ((int*)h->orig)[i];
+		for (i = 0; i < 3; i++)
+			((int*)h->orig)[i] = h->jump[i];
 	}
 	else {
-		snprintf(dir_path, sizeof(dir_path), "/proc/%d/task", pid);
+		if ((unsigned long int)hook_thumb % 4 == 0)
+			LOGD("warning hook is not thumb 0x%x\n", hook_thumb);
+		h->thumb = 1;
+		LOGD("THUMB using 0x%x\n", hook_thumb);
+		h->patch = (unsigned int)hook_thumb;
+		h->orig = addr;
+		h->jumpt[1] = 0xb4;
+		h->jumpt[0] = 0x30; // push {r4,r5}
+		h->jumpt[3] = 0xa5;
+		h->jumpt[2] = 0x03; // add r5, pc, #12
+		h->jumpt[5] = 0x68;
+		h->jumpt[4] = 0x2d; // ldr r5, [r5]
+		h->jumpt[7] = 0xb0;
+		h->jumpt[6] = 0x02; // add sp,sp,#8
+		h->jumpt[9] = 0xb4;
+		h->jumpt[8] = 0x20; // push {r5}
+		h->jumpt[11] = 0xb0;
+		h->jumpt[10] = 0x81; // sub sp,sp,#4
+		h->jumpt[13] = 0xbd;
+		h->jumpt[12] = 0x20; // pop {r5, pc}
+		h->jumpt[15] = 0x46;
+		h->jumpt[14] = 0xaf; // mov pc, r5 ; just to pad to 4 byte boundary
+		memcpy(&h->jumpt[16], (unsigned char*)&h->patch, sizeof(unsigned int));
+		unsigned int orig = addr - 1; // sub 1 to get real address
+		for (i = 0; i < 20; i++) {
+			h->storet[i] = ((unsigned char*)orig)[i];
+			//LOGD("%0.2x ", h->storet[i]);
+		}
+		//LOGD("\n");
+		for (i = 0; i < 20; i++) {
+			((unsigned char*)orig)[i] = h->jumpt[i];
+			//LOGD("%0.2x ", ((unsigned char*)orig)[i]);
+		}
 	}
-
-	dir = opendir(dir_path);
-    if (dir == NULL) {
-    	return 0;
-    }
-
-    i = 0;
-    while((entry = readdir(dir)) != NULL) {
-    	tid = atoi(entry->d_name);
-    	if (tid != 0 && tid != getpid()) {
-    		tids[i++] = tid;
-    	}
-    }
-    closedir(dir);
-    return i;
+	LOGD("h->store  = 0x%x,0x%x,0x%x\n", ((int*)h->store)[0],((int*)h->store)[1],((int*)h->store)[2]);
+	LOGD("h->orig  = 0x%x,0x%x,0x%x\n", ((int*)h->orig)[0],((int*)h->orig)[1],((int*)h->orig)[2]);
+	hook_cacheflush((unsigned int)h->orig, (unsigned int)h->orig+sizeof(h->jumpt));
+	return 1;
 }
 
-
-static bool doProcessThreadPC(struct inlineHookItem *item, struct pt_regs *regs, int action) {
-	int offset;
+void hook_precall(struct hook_t *h) {
 	int i;
 
-	switch (action)
-	{
-		case ACTION_ENABLE:
-			offset = regs->ARM_pc - CLEAR_BIT0(item->target_addr);
-			for (i = 0; i < item->count; ++i) {
-				if (offset == item->orig_boundaries[i]) {
-					regs->ARM_pc = (uint32_t) item->trampoline_instructions + item->trampoline_boundaries[i];
-					return true;
-				}
-			}
-			break;
-		case ACTION_DISABLE:
-			offset = regs->ARM_pc - (int) item->trampoline_instructions;
-			for (i = 0; i < item->count; ++i) {
-				if (offset == item->trampoline_boundaries[i]) {
-					regs->ARM_pc = CLEAR_BIT0(item->target_addr) + item->orig_boundaries[i];
-					return true;
-				}
-			}
-			break;
-	}
-
-	return false;
-}
-
-
-static void processThreadPC(pid_t tid, struct inlineHookItem *item, int action) {
-	struct pt_regs regs;
-
-	if (ptrace(PTRACE_GETREGS, tid, NULL, &regs) == 0) {
-		if (item == NULL) {
-			int pos;
-
-			for (pos = 0; pos < info.size; ++pos) {
-				if (doProcessThreadPC(&info.item[pos], &regs, action) == true) {
-					break;
-				}
-			}
+	if (h->thumb) {
+		unsigned int orig = h->orig - 1;
+		for (i = 0; i < 20; i++) {
+			((unsigned char*)orig)[i] = h->storet[i];
 		}
-		else {
-			doProcessThreadPC(item, &regs, action);
-		}
-
-		ptrace(PTRACE_SETREGS, tid, NULL, &regs);
-	}
-}
-
-
-static pid_t freeze(struct inlineHookItem *item, int action) {
-	int count;
-	pid_t tids[1024];
-	pid_t pid;
-
-	pid = -1;
-	count = getAllTids(getpid(), tids);
-	if (count > 0) {
-		pid = fork();
-
-		if (pid == 0) {
-			int i;
-
-			for (i = 0; i < count; ++i) {
-				if (ptrace(PTRACE_ATTACH, tids[i], NULL, NULL) == 0) {
-					waitpid(tids[i], NULL, WUNTRACED);
-					processThreadPC(tids[i], item, action);
-				}
-			}
-
-			raise(SIGSTOP);
-
-			for (i = 0; i < count; ++i) {
-				ptrace(PTRACE_DETACH, tids[i], NULL, NULL);
-			}
-
-			exit(0);
-		}
-
-		else if (pid > 0) {
-			waitpid(pid, NULL, WUNTRACED);
-		}
-	}
-
-	return pid;
-}
-
-
-static void unFreeze(pid_t pid) {
-	if (pid < 0) {
-		return;
-	}
-
-	kill(pid, SIGCONT);
-	while (1) {
-		if (wait(NULL) < 0) {
-			break;
-		}
-	}
-}
-
-
-static bool isExecutableAddr(uint32_t addr) {
-	FILE *fp;
-	char line[1024];
-	uint32_t start;
-	uint32_t end;
-
-	fp = fopen("/proc/self/maps", "r");
-	if (fp == NULL) {
-		return false;
-	}
-
-	while (fgets(line, sizeof(line), fp)) {
-		if (strstr(line, "r-xp")) {
-			start = strtoul(strtok(line, "-"), NULL, 16);
-			end = strtoul(strtok(NULL, " "), NULL, 16);
-			if (addr >= start && addr <= end) {
-				fclose(fp);
-				return true;
-			}
-		}
-	}
-
-	fclose(fp);
-
-	return false;
-}
-
-
-static struct inlineHookItem *findInlineHookItem(uint32_t target_addr) {
-	int i;
-
-	for (i = 0; i < info.size; ++i) {
-		if (info.item[i].target_addr == target_addr) {
-			return &info.item[i];
-		}
-	}
-
-	return NULL;
-}
-
-static struct inlineHookItem *addInlineHookItem() {
-	struct inlineHookItem *item;
-
-	if (info.size >= 1024) {
-		return NULL;
-	}
-
-	item = &info.item[info.size];
-	++info.size;
-
-	return item;
-}
-
-static void deleteInlineHookItem(int pos) {
-	info.item[pos] = info.item[info.size - 1];
-	--info.size;
-}
-
-enum InlineHook_Status registerInlineHook(uint32_t target_addr, uint32_t new_addr, uint32_t **proto_addr) {
-	struct inlineHookItem *item;
-
-	if (!isExecutableAddr(target_addr) || !isExecutableAddr(new_addr)) {
-		return INLINE_HOOK_ERROR_NOT_EXECUTABLE;
-	}
-
-	item = findInlineHookItem(target_addr);
-	if (item != NULL) {
-		if (item->status == REGISTERED) {
-			return INLINE_HOOK_ERROR_ALREADY_REGISTERED;
-		}
-		else if (item->status == HOOKED) {
-			return INLINE_HOOK_ERROR_ALREADY_HOOKED;
-		}
-		else {
-			return INLINE_HOOK_ERROR_UNKNOWN;
-		}
-	}
-
-	item = addInlineHookItem();
-
-	item->target_addr = target_addr;
-	item->new_addr = new_addr;
-	item->proto_addr = proto_addr;
-
-	item->length = TEST_BIT0(item->target_addr) ? 12 : 8;
-	item->orig_instructions = malloc(item->length);
-	memcpy(item->orig_instructions, (void *) CLEAR_BIT0(item->target_addr), item->length);
-
-	item->trampoline_instructions = mmap(NULL, PAGE_SIZE, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANONYMOUS | MAP_PRIVATE, 0, 0);
-	relocateInstruction(item->target_addr, item->orig_instructions, item->length, item->trampoline_instructions, item->orig_boundaries, item->trampoline_boundaries, &item->count);
-
-	item->status = REGISTERED;
-
-	return INLINE_HOOK_OK;
-}
-
-
-static void doInlineUnHook(struct inlineHookItem *item, int pos) {
-	mprotect((void *) PAGE_START(CLEAR_BIT0(item->target_addr)), PAGE_SIZE, PROT_READ | PROT_WRITE | PROT_EXEC);
-	memcpy((void *) CLEAR_BIT0(item->target_addr), item->orig_instructions, item->length);
-	mprotect((void *) PAGE_START(CLEAR_BIT0(item->target_addr)), PAGE_SIZE, PROT_READ | PROT_EXEC);
-	munmap(item->trampoline_instructions, PAGE_SIZE);
-	free(item->orig_instructions);
-
-	deleteInlineHookItem(pos);
-
-	cacheflush(CLEAR_BIT0(item->target_addr), CLEAR_BIT0(item->target_addr) + item->length, 0);
-}
-
-enum InlineHook_Status inlineUnHook(uint32_t target_addr) {
-	int i;
-
-	for (i = 0; i < info.size; ++i) {
-		if (info.item[i].target_addr == target_addr && info.item[i].status == HOOKED) {
-			pid_t pid;
-
-			pid = freeze(&info.item[i], ACTION_DISABLE);
-
-			doInlineUnHook(&info.item[i], i);
-
-			unFreeze(pid);
-
-			return INLINE_HOOK_OK;
-		}
-	}
-
-	return INLINE_HOOK_ERROR_NOT_HOOKED;
-}
-
-void inlineUnHookAll() {
-	pid_t pid;
-	int i;
-
-	pid = freeze(NULL, ACTION_DISABLE);
-
-	for (i = 0; i < info.size; ++i) {
-		if (info.item[i].status == HOOKED) {
-			doInlineUnHook(&info.item[i], i);
-		}
-	}
-
-	unFreeze(pid);
-}
-
-static void doInlineHook(struct inlineHookItem *item) {
-	mprotect((void *) PAGE_START(CLEAR_BIT0(item->target_addr)), PAGE_SIZE, PROT_READ | PROT_WRITE | PROT_EXEC);
-
-	if (TEST_BIT0(item->target_addr)) {
-		int i;
-
-		i = 0;
-		if (CLEAR_BIT0(item->target_addr) % 4 != 0) {
-			((uint16_t *) CLEAR_BIT0(item->target_addr))[i++] = 0xBF00;  // NOP
-		}
-		((uint16_t *) CLEAR_BIT0(item->target_addr))[i++] = 0xF8DF;
-		((uint16_t *) CLEAR_BIT0(item->target_addr))[i++] = 0xF000;	// LDR.W PC, [PC]
-		((uint16_t *) CLEAR_BIT0(item->target_addr))[i++] = item->new_addr & 0xFFFF;
-		((uint16_t *) CLEAR_BIT0(item->target_addr))[i++] = item->new_addr >> 16;
 	}
 	else {
-		((uint32_t *) (item->target_addr))[0] = 0xe51ff004;	// LDR PC, [PC, #-4]
-		((uint32_t *) (item->target_addr))[1] = item->new_addr;
+		for (i = 0; i < 3; i++)
+			((int*)h->orig)[i] = h->store[i];
 	}
-
-	mprotect((void *) PAGE_START(CLEAR_BIT0(item->target_addr)), PAGE_SIZE, PROT_READ | PROT_EXEC);
-
-	if (item->proto_addr != NULL) {
-		*(item->proto_addr) = TEST_BIT0(item->target_addr) ? (uint32_t *) SET_BIT0((uint32_t) item->trampoline_instructions) : item->trampoline_instructions;
-	}
-
-	item->status = HOOKED;
-
-	cacheflush(CLEAR_BIT0(item->target_addr), CLEAR_BIT0(item->target_addr) + item->length, 0);
+	hook_cacheflush((unsigned int)h->orig, (unsigned int)h->orig+sizeof(h->jumpt));
 }
 
-enum InlineHook_Status inlineHook(uint32_t target_addr) {
-	int i;
-	struct inlineHookItem *item;
-
-	item = NULL;
-	for (i = 0; i < info.size; ++i) {
-		if (info.item[i].target_addr == target_addr) {
-			item = &info.item[i];
-			break;
-		}
-	}
-
-	if (item == NULL) {
-		return INLINE_HOOK_ERROR_NOT_REGISTERED;
-	}
-
-	if (item->status == REGISTERED) {
-		pid_t pid;
-		pid = freeze(item, ACTION_ENABLE);
-		doInlineHook(item);
-		unFreeze(pid);
-		return INLINE_HOOK_OK;
-	} else if (item->status == HOOKED) {
-		return INLINE_HOOK_ERROR_ALREADY_HOOKED;
-	} else {
-		return INLINE_HOOK_ERROR_UNKNOWN;
-	}
-}
-
-void inlineHookAll() {
-	pid_t pid;
+void hook_postcall(struct hook_t *h) {
 	int i;
 
-	pid = freeze(NULL, ACTION_ENABLE);
-
-	for (i = 0; i < info.size; ++i) {
-		if (info.item[i].status == REGISTERED) {
-			doInlineHook(&info.item[i]);
-		}
+	if (h->thumb) {
+		unsigned int orig = h->orig - 1;
+		for (i = 0; i < 20; i++)
+			((unsigned char*)orig)[i] = h->jumpt[i];
 	}
-
-	unFreeze(pid);
+	else {
+		for (i = 0; i < 3; i++)
+			((int*)h->orig)[i] = h->jump[i];
+	}
+	hook_cacheflush((unsigned int)h->orig, (unsigned int)h->orig+sizeof(h->jumpt));
 }
 
-#ifdef __cplusplus
-};
-#endif
+void unhook(struct hook_t *h) {
+	LOGD("unhooking %s = %x  hook = %x ", h->name, h->orig, h->patch);
+	hook_precall(h);
+}
+/////////////////////////////////////////////////////////////

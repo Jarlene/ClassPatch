@@ -8,7 +8,9 @@ LOCAL_SRC_FILES:= Hook.cpp \
                   hookNative/NativeInlineHook.cpp \
                   hookNative/HookNativeMethod.cpp \
                   hookNative/NativeHook.cpp \
-                  hookNative/NativeElfHook.cpp
+                  hookNative/NativeElfHook.cpp \
+                  hookNative/NativeInlineHook.cpp \
+                  hookNative/InlineUtils.cpp
 
 
 
