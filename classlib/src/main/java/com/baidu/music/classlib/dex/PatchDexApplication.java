@@ -37,7 +37,7 @@ import com.baidu.music.classlib.manager.HookManager;
  *   <ul>
  *       @modify by Jarlene on 2015/11/23.
  */
-public class MultiDexApplication extends Application {
+public class PatchDexApplication extends Application {
   @Override
   protected void attachBaseContext(Context base) {
     super.attachBaseContext(base);

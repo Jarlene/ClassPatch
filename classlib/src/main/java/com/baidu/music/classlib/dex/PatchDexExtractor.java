@@ -44,7 +44,7 @@ import java.util.zip.ZipOutputStream;
  * directory.
  * @modify by Jarlene on 2015/11/23.
  */
-final class MultiDexExtractor {
+final class PatchDexExtractor {
 
     private static final String TAG = PatchDex.TAG;
 
@@ -82,7 +82,7 @@ final class MultiDexExtractor {
      */
     static List<File> load(Context context, ApplicationInfo applicationInfo, File dexDir,
             boolean forceReload) throws IOException {
-        Log.i(TAG, "MultiDexExtractor.load(" + applicationInfo.sourceDir + ", " + forceReload + ")");
+        Log.i(TAG, "PatchDexExtractor.load(" + applicationInfo.sourceDir + ", " + forceReload + ")");
         final File sourceApk = new File(applicationInfo.sourceDir);
 
         long currentCrc = getZipCrc(sourceApk);

@@ -236,7 +236,7 @@ public final class PatchDex {
      * Patches the application context class loader by appending extra dex files
      * loaded from the application apk. This method should be called in the
      * attachBaseContext of your {@link Application}, see
-     * {@link MultiDexApplication} for more explanation and an example.
+     * {@link PatchDexApplication} for more explanation and an example.
      *
      * @param context application context.
      * @throws RuntimeException if an error occurred preventing the classloader
@@ -311,13 +311,13 @@ public final class PatchDex {
 
                 File dexDir = new File(applicationInfo.dataDir, SECONDARY_FOLDER_NAME);
 
-                List<File> files = MultiDexExtractor.load(context, applicationInfo, dexDir, false);
+                List<File> files = PatchDexExtractor.load(context, applicationInfo, dexDir, false);
                 if (checkValidZipFiles(files)) {
                     installSecondaryDexes(loader, dexDir, files);
                 } else {
                     Log.w(TAG, "Files were not valid zip files.  Forcing a reload.");
                     // Try again, but this time force a reload of the zip file.
-                    files = MultiDexExtractor.load(context, applicationInfo, dexDir, true);
+                    files = PatchDexExtractor.load(context, applicationInfo, dexDir, true);
                     if (checkValidZipFiles(files)) {
                         installSecondaryDexes(loader, dexDir, files);
                     } else {
@@ -409,7 +409,7 @@ public final class PatchDex {
      */
     private static boolean checkValidZipFiles(List<File> files) {
         for (File file : files) {
-            if (!MultiDexExtractor.verifyZipFile(file)) {
+            if (!PatchDexExtractor.verifyZipFile(file)) {
                 return false;
             }
         }
