@@ -26,7 +26,7 @@
 #include "dalvik.h"
 #include "substrate.h"
 #include "../hookNative/NativeHook.h"
-#include "../hookNative/NativeInlineHook.h"
+#include "../hookNative/InlineHook.h"
 
 
 

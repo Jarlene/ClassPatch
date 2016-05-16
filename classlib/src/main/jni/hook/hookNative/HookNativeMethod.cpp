@@ -5,7 +5,7 @@
 #include "NativeElfHook.h"
 #include "NativeHook.h"
 #include "TKHooklib.h"
-
+#include "InlineHook.h"
 #include "NativeInlineHook.h"
 
 #include <dlfcn.h>
