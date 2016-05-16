@@ -2,9 +2,9 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/ClassPatch.iml" filepath="$PROJECT_DIR$/.idea/modules/ClassPatch.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/classlib/classlib.iml" filepath="$PROJECT_DIR$/.idea/modules/classlib/classlib.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/sample/sample.iml" filepath="$PROJECT_DIR$/.idea/modules/sample/sample.iml" />
+      <module fileurl="file://$PROJECT_DIR$/ClassPatch.iml" filepath="$PROJECT_DIR$/ClassPatch.iml" />
+      <module fileurl="file://$PROJECT_DIR$/classlib/classlib.iml" filepath="$PROJECT_DIR$/classlib/classlib.iml" />
+      <module fileurl="file://$PROJECT_DIR$/sample/sample.iml" filepath="$PROJECT_DIR$/sample/sample.iml" />
     </modules>
   </component>
 </project>
