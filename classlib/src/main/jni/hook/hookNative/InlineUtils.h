@@ -1,5 +1,5 @@
 //
-// Created by Administrator on 2016/5/4.
+// Created by Jarlene on 2016/5/4.
 //
 
 #ifndef CLASSPATCH_INLINEUTILS_H

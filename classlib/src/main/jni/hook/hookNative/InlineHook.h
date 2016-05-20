@@ -1,5 +1,5 @@
 //
-// Created by Administrator on 2016/5/20.
+// Created by Jarlene on 16/5/16.
 //
 
 #ifndef CLASSPATCH_INLINEHOOK_H
@@ -7,7 +7,7 @@
 
 #include <stdio.h>
 
-enum inline_status {
+enum inline_hook_status {
 	INLINE_ERROR_UNKNOWN = -1,
 	INLINE_OK = 0,
 	INLINE_ERROR_NOT_INITIALIZED,
@@ -20,11 +20,12 @@ enum inline_status {
 	INLINE_ERROR_FUNCTION_NOT_FOUND
 };
 
-enum inline_status registerInlineHook(uint32_t target_addr, uint32_t new_addr, uint32_t **proto_addr);
-enum inline_status inlineUnHook(uint32_t target_addr);
+enum inline_hook_status registerInlineHook(uint32_t target_addr, uint32_t new_addr, uint32_t **proto_addr);
+enum inline_hook_status inlineUnHook(uint32_t target_addr);
 void inlineUnHookAll();
-enum inline_status inlineHook(uint32_t target_addr);
+enum inline_hook_status inlineHook(uint32_t target_addr);
 void inlineHookAll();
+
 
 
 #endif //CLASSPATCH_INLINEHOOK_H

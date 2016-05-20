@@ -1,8 +1,11 @@
-//
-// Created by Jarlene on 16/5/16.
-//
-
-
+/*
+thumb16 thumb32 arm32 inlineHook
+author: ele7enxxh
+mail: ele7enxxh@qq.com
+website: ele7enxxh.com
+modified time: 2015-01-23
+created time: 2015-11-30
+*/
 
 #include <stdlib.h>
 #include <stdbool.h>
@@ -10,12 +13,12 @@
 #include <dirent.h>
 #include <signal.h>
 #include <sys/mman.h>
+// #include <asm/ptrace.h>
 #include <sys/wait.h>
 #include <sys/ptrace.h>
-#include <unistd.h>
 
 #include "relocate.h"
-#include "InlineHook.h"
+#include "include/inlineHook.h"
 
 #ifndef PAGE_SIZE
 #define PAGE_SIZE 4096
@@ -28,7 +31,7 @@
 
 #define ACTION_ENABLE	0
 #define ACTION_DISABLE	1
-
+	
 enum hook_status {
 	REGISTERED,
 	HOOKED,
@@ -55,7 +58,8 @@ struct inlineHookInfo {
 
 static struct inlineHookInfo info = {0};
 
-static int getAllTids(pid_t pid, pid_t *tids) {
+static int getAllTids(pid_t pid, pid_t *tids)
+{
 	char dir_path[32];
 	DIR *dir;
 	int i;
@@ -85,8 +89,8 @@ static int getAllTids(pid_t pid, pid_t *tids) {
     return i;
 }
 
-
-static bool doProcessThreadPC(struct inlineHookItem *item, struct pt_regs *regs, int action) {
+static bool doProcessThreadPC(struct inlineHookItem *item, struct pt_regs *regs, int action)
+{
 	int offset;
 	int i;
 
@@ -115,7 +119,8 @@ static bool doProcessThreadPC(struct inlineHookItem *item, struct pt_regs *regs,
 	return false;
 }
 
-static void processThreadPC(pid_t tid, struct inlineHookItem *item, int action) {
+static void processThreadPC(pid_t tid, struct inlineHookItem *item, int action)
+{
 	struct pt_regs regs;
 
 	if (ptrace(PTRACE_GETREGS, tid, NULL, &regs) == 0) {
@@ -136,7 +141,8 @@ static void processThreadPC(pid_t tid, struct inlineHookItem *item, int action) 
 	}
 }
 
-static pid_t freeze(struct inlineHookItem *item, int action) {
+static pid_t freeze(struct inlineHookItem *item, int action)
+{
 	int count;
 	pid_t tids[1024];
 	pid_t pid;
@@ -155,8 +161,8 @@ static pid_t freeze(struct inlineHookItem *item, int action) {
 					processThreadPC(tids[i], item, action);
 				}
 			}
-
-			raise(SIGSTOP);
+			
+			raise(SIGSTOP);	
 
 			for (i = 0; i < count; ++i) {
 				ptrace(PTRACE_DETACH, tids[i], NULL, NULL);
@@ -173,7 +179,8 @@ static pid_t freeze(struct inlineHookItem *item, int action) {
 	return pid;
 }
 
-static void unFreeze(pid_t pid) {
+static void unFreeze(pid_t pid)
+{
 	if (pid < 0) {
 		return;
 	}
@@ -186,7 +193,8 @@ static void unFreeze(pid_t pid) {
 	}
 }
 
-static bool isExecutableAddr(uint32_t addr) {
+static bool isExecutableAddr(uint32_t addr)
+{
 	FILE *fp;
 	char line[1024];
 	uint32_t start;
@@ -213,7 +221,8 @@ static bool isExecutableAddr(uint32_t addr) {
 	return false;
 }
 
-static struct inlineHookItem *findInlineHookItem(uint32_t target_addr) {
+static struct inlineHookItem *findInlineHookItem(uint32_t target_addr)
+{
 	int i;
 
 	for (i = 0; i < info.size; ++i) {
@@ -238,28 +247,30 @@ static struct inlineHookItem *addInlineHookItem() {
 	return item;
 }
 
-static void deleteInlineHookItem(int pos) {
+static void deleteInlineHookItem(int pos)
+{
 	info.item[pos] = info.item[info.size - 1];
 	--info.size;
 }
 
-enum inline_hook_status registerInlineHook(uint32_t target_addr, uint32_t new_addr, uint32_t **proto_addr) {
+enum ele7en_status registerInlineHook(uint32_t target_addr, uint32_t new_addr, uint32_t **proto_addr)
+{
 	struct inlineHookItem *item;
 
 	if (!isExecutableAddr(target_addr) || !isExecutableAddr(new_addr)) {
-		return INLINE_ERROR_NOT_EXECUTABLE;
+		return ELE7EN_ERROR_NOT_EXECUTABLE;
 	}
 
 	item = findInlineHookItem(target_addr);
 	if (item != NULL) {
 		if (item->status == REGISTERED) {
-			return INLINE_ERROR_ALREADY_REGISTERED;
+			return ELE7EN_ERROR_ALREADY_REGISTERED;
 		}
 		else if (item->status == HOOKED) {
-			return INLINE_ERROR_ALREADY_HOOKED;
+			return ELE7EN_ERROR_ALREADY_HOOKED;
 		}
 		else {
-			return INLINE_ERROR_UNKNOWN;
+			return ELE7EN_ERROR_UNKNOWN;
 		}
 	}
 
@@ -278,7 +289,7 @@ enum inline_hook_status registerInlineHook(uint32_t target_addr, uint32_t new_ad
 
 	item->status = REGISTERED;
 
-	return INLINE_OK;
+	return ELE7EN_OK;
 }
 
 static void doInlineUnHook(struct inlineHookItem *item, int pos)
@@ -294,7 +305,8 @@ static void doInlineUnHook(struct inlineHookItem *item, int pos)
 	cacheflush(CLEAR_BIT0(item->target_addr), CLEAR_BIT0(item->target_addr) + item->length, 0);
 }
 
-enum inline_hook_status inlineUnHook(uint32_t target_addr) {
+enum ele7en_status inlineUnHook(uint32_t target_addr)
+{
 	int i;
 
 	for (i = 0; i < info.size; ++i) {
@@ -307,14 +319,15 @@ enum inline_hook_status inlineUnHook(uint32_t target_addr) {
 
 			unFreeze(pid);
 
-			return INLINE_OK;
+			return ELE7EN_OK;
 		}
 	}
 
-	return INLINE_ERROR_NOT_HOOKED;
+	return ELE7EN_ERROR_NOT_HOOKED;
 }
 
-void inlineUnHookAll() {
+void inlineUnHookAll()
+{
 	pid_t pid;
 	int i;
 
@@ -329,7 +342,8 @@ void inlineUnHookAll() {
 	unFreeze(pid);
 }
 
-static void doInlineHook(struct inlineHookItem *item) {
+static void doInlineHook(struct inlineHookItem *item)
+{
 	mprotect((void *) PAGE_START(CLEAR_BIT0(item->target_addr)), PAGE_SIZE, PROT_READ | PROT_WRITE | PROT_EXEC);
 
 	if (TEST_BIT0(item->target_addr)) {
@@ -356,11 +370,12 @@ static void doInlineHook(struct inlineHookItem *item) {
 	}
 
 	item->status = HOOKED;
-
+	
 	cacheflush(CLEAR_BIT0(item->target_addr), CLEAR_BIT0(item->target_addr) + item->length, 0);
 }
 
-enum inline_hook_status inlineHook(uint32_t target_addr) {
+enum ele7en_status inlineHook(uint32_t target_addr)
+{
 	int i;
 	struct inlineHookItem *item;
 
@@ -373,7 +388,7 @@ enum inline_hook_status inlineHook(uint32_t target_addr) {
 	}
 
 	if (item == NULL) {
-		return INLINE_ERROR_NOT_REGISTERED;
+		return ELE7EN_ERROR_NOT_REGISTERED;
 	}
 
 	if (item->status == REGISTERED) {
@@ -385,17 +400,18 @@ enum inline_hook_status inlineHook(uint32_t target_addr) {
 
 		unFreeze(pid);
 
-		return INLINE_OK;
+		return ELE7EN_OK;
 	}
 	else if (item->status == HOOKED) {
-		return INLINE_ERROR_ALREADY_HOOKED;
+		return ELE7EN_ERROR_ALREADY_HOOKED;
 	}
 	else {
-		return INLINE_ERROR_UNKNOWN;
+		return ELE7EN_ERROR_UNKNOWN;
 	}
 }
 
-void inlineHookAll() {
+void inlineHookAll()
+{
 	pid_t pid;
 	int i;
 

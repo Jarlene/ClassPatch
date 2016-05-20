@@ -1,7 +1,4 @@
-//
-// Created by Jarlene on 2016/5/4.
-//
-
+#define _XOPEN_SOURCE 500
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -14,15 +11,12 @@
 #include <dlfcn.h>
 #include <elf.h>
 #include <unistd.h>
-#include <errno.h>
+#include <errno.h>       
 #include <sys/mman.h>
 #include <termios.h>
 #include <sys/ioctl.h>
 
-#include "InlineUtils.h"
-#include "NativeInlineHook.h"
-
-#define _XOPEN_SOURCE 500
+#include "hook.h"
 
 /* memory map for libraries */
 #define MAX_NAME_LEN 256
@@ -38,13 +32,13 @@ struct symlist {
 	char *str;            /* symbol strings */
 	unsigned num;         /* number of symbols */
 };
-
 struct symtab {
 	struct symlist *st;    /* "static" symbols */
 	struct symlist *dyn;   /* dynamic symbols */
 };
 
- void* xmalloc(size_t size) {
+ void* xmalloc(size_t size)
+{
 	void *p;
 	p = malloc(size);
 	if (!p) {
@@ -54,12 +48,14 @@ struct symtab {
 	return p;
 }
 
- int my_pread(int fd, void *buf, size_t count, off_t offset) {
+ int my_pread(int fd, void *buf, size_t count, off_t offset)
+{
 	lseek(fd, offset, SEEK_SET);
 	return read(fd, buf, count);
 }
 
- struct symlist* get_syms(int fd, Elf32_Shdr *symh, Elf32_Shdr *strh) {
+ struct symlist* get_syms(int fd, Elf32_Shdr *symh, Elf32_Shdr *strh)
+{
 	struct symlist *sl, *ret;
 	int rv;
 
@@ -69,7 +65,7 @@ struct symtab {
 	sl->sym = NULL;
 
 	/* sanity */
-	if (symh->sh_size % sizeof(Elf32_Sym)) {
+	if (symh->sh_size % sizeof(Elf32_Sym)) { 
 		//printf("elf_error\n");
 		goto out;
 	}
@@ -104,7 +100,8 @@ out:
 	return ret;
 }
 
- int do_load(int fd, symtab_t symtab) {
+ int do_load(int fd, symtab_t symtab)
+{
 	int rv;
 	size_t size;
 	Elf32_Ehdr ehdr;
@@ -114,7 +111,7 @@ out:
 	char *shstrtab = NULL;
 	int i;
 	int ret = -1;
-
+	
 	/* elf header */
 	rv = read(fd, &ehdr, sizeof(ehdr));
 	if (0 > rv) {
@@ -146,7 +143,7 @@ out:
 		LOGD("elf error 3 %d %d\n", rv, size);
 		goto out;
 	}
-
+	
 	/* section header string table */
 	size = shdr[ehdr.e_shstrndx].sh_size;
 	shstrtab = (char *) xmalloc(size);
@@ -217,7 +214,8 @@ out:
 	return ret;
 }
 
- symtab_t load_symtab(char *filename) {
+ symtab_t load_symtab(char *filename)
+{
 	int fd;
 	symtab_t symtab;
 
@@ -238,7 +236,8 @@ out:
 	return symtab;
 }
 
- int load_memmap(pid_t pid, struct mm *mm, int *nmmp) {
+ int load_memmap(pid_t pid, struct mm *mm, int *nmmp)
+{
 	char raw[80000]; // increase this if needed for larger "maps"
 	char name[MAX_NAME_LEN];
 	char *p;
@@ -322,7 +321,8 @@ out:
    address.  If libc cannot be found return -1 and
    leave NAME and START untouched.  Otherwise return 0
    and null-terminated NAME. */
- int find_libname(char *libn, char *name, int len, unsigned long *start, struct mm *mm, int nmm) {
+ int find_libname(char *libn, char *name, int len, unsigned long *start, struct mm *mm, int nmm)
+{
 	int i;
 	struct mm *m;
 	char *p;
@@ -349,13 +349,14 @@ out:
 	strncpy(name, m->name, len);
 	if (strlen(m->name) >= len)
 		name[len-1] = '\0';
-
+		
 	mprotect((void*)m->start, m->end - m->start, PROT_READ|PROT_WRITE|PROT_EXEC);
 	return 0;
 }
 
  int lookup2(struct symlist *sl, unsigned char type,
-	char *name, unsigned long *val) {
+	char *name, unsigned long *val)
+{
 	Elf32_Sym *p;
 	int len;
 	int i;
@@ -375,7 +376,8 @@ out:
 }
 
  int lookup_sym(symtab_t s, unsigned char type,
-	   char *name, unsigned long *val) {
+	   char *name, unsigned long *val)
+{
 	if (s->dyn && !lookup2(s->dyn, type, name, val))
 		return 0;
 	if (s->st && !lookup2(s->st, type, name, val))
@@ -388,7 +390,8 @@ out:
 	return lookup_sym(s, STT_FUNC, name, val);
 }
 
-int find_name(pid_t pid, char *name, char *libn, unsigned long *addr) {
+int find_name(pid_t pid, char *name, char *libn, unsigned long *addr)
+{
 	struct mm mm[1000];
 	unsigned long libcaddr;
 	int nmm;
@@ -417,7 +420,8 @@ int find_name(pid_t pid, char *name, char *libn, unsigned long *addr) {
 	return 0;
 }
 
-int find_libbase(pid_t pid, char *libn, unsigned long *addr) {
+int find_libbase(pid_t pid, char *libn, unsigned long *addr)
+{
 	struct mm mm[1000];
 	unsigned long libcaddr;
 	int nmm;
