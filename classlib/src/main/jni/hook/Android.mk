@@ -5,7 +5,7 @@ LOCAL_SRC_FILES:= Hook.cpp \
                   hookDalvik/HookDalvikMethod.cpp \
                   hookArt/HookArtMethod.cpp \
                   hookNative/relocate.cpp \
-                  hookNative/NativeInlineHook.cpp \
+                  hookNative/InlineHook.cpp \
                   hookNative/HookNativeMethod.cpp \
                   hookNative/NativeHook.cpp \
                   hookNative/NativeElfHook.cpp \
