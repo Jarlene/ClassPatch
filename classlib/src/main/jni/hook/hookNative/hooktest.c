@@ -1,7 +1,7 @@
 #include <string.h>
 #include <jni.h>
 #include <android/log.h>
-#include "elfhook.h"
+#include "ElfHook.h"
 
 #define  LOG_TAG    "HookTest"
 #define  LOGI(...)  __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
