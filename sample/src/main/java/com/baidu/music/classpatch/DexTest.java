@@ -8,19 +8,19 @@ import android.widget.Toast;
  */
 public class DexTest {
 
-    private static String from = "来自Main Dex";
+    private static String from = "来自Patch Dex";
 
     public void showToast(Context context) {
         Toast.makeText(context, "Toast from " + from, Toast.LENGTH_SHORT ).show();
     }
 
 
-    public static String getStringStatic(int a, String b){
+    public static String getStringStatic(String a, String b){
         b = b + from;
-        return String.format("%d %s from getStringStatic  ", a, b);
+        return String.format("%s %s from getStringStatic  ", a, b);
     }
 
-    public static String getTestString(int a, String b) {
+    public static String getTestString(String a, String b) {
         b = b + from;
         return "hook ok,  get string from getTestString" + a + b;
     }

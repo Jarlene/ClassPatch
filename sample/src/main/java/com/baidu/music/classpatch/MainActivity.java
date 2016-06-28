@@ -53,8 +53,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mContext = this;
         String apkPath = HookManager.getInstance().getPatchDir(mContext).getAbsolutePath() + File.separator + "DexTest.apk";
         PatchResource patchResource = ResourceManager.getInstance().getPatchResource(mContext, apkPath);
-        int resId = patchResource.getResApkLayoutId("activity_main");
-        if (resId <= 0) {
+        View resId = patchResource.getResApkLayoutView(this, "activity_main");
+        if (resId == null) {
             setContentView(R.layout.activity_main);
         } else {
             setContentView(resId);
@@ -130,7 +130,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 nativeHookButtonClicked();
                 break;
             case R.id.fab:
-                Snackbar.make(v, "the class come from Main Dex", Snackbar.LENGTH_LONG)
+                Snackbar.make(v, "the class come from Patch Dex", Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
                 break;
             case R.id.copyFile:
@@ -201,6 +201,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         } catch (NoSuchMethodException e) {
             e.printStackTrace();
         }
-        Toast.makeText(MainActivity.this, DexTest.getStringStatic(1024, " from aa "), Toast.LENGTH_SHORT).show();
+        Toast.makeText(MainActivity.this, DexTest.getStringStatic("das", " from aa "), Toast.LENGTH_SHORT).show();
     }
 }
